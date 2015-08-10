@@ -2,8 +2,8 @@ from django.db import models
 from django.db.models.base import ModelBase
 from django.utils.translation import ugettext_lazy as _
 from django.dispatch import Signal
-
-from qhonuskan_votes.compat import User
+from django.conf import settings
+# from qhonuskan_votes.compat import User
 
 vote_changed = Signal(providing_args=["voter", "object"])
 
@@ -16,11 +16,11 @@ class ObjectsWithScoresManager(models.Manager):
     """
     Returns objects with their scores
     """
-    def get_query_set(self):
+    def get_queryset(self):
         from qhonuskan_votes.utils import SumWithDefault
-        return super(ObjectsWithScoresManager, self).get_query_set().annotate(
+        return super(ObjectsWithScoresManager, self).get_queryset().annotate(
             vote_score=SumWithDefault(
-                '%svote__value' % self.model._meta.module_name, default=0
+                '%svote__value' % self.model._meta.model_name, default=0
             )
         )
 
@@ -29,11 +29,11 @@ class SortByScoresManager(models.Manager):
     """
     Returns objects with their scores and orders them by value (1,0,-1)
     """
-    def get_query_set(self):
+    def get_queryset(self):
         from qhonuskan_votes.utils import SumWithDefault
-        return super(SortByScoresManager, self).get_query_set().annotate(
+        return super(SortByScoresManager, self).get_queryset().annotate(
             vote_score=SumWithDefault(
-                '%svote__value' % self.model._meta.module_name, default=0
+                '%svote__value' % self.model._meta.model_name, default=0
             )
         ).order_by('-vote_score')
 
@@ -87,7 +87,7 @@ class VotesField(object):
             __metaclass__ = VoteMeta
 
             voter = models.ForeignKey(
-                User,
+                settings.AUTH_USER_MODEL,
                 verbose_name=_('voter'))
 
             value = models.IntegerField(
